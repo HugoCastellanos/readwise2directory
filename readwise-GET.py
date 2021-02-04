@@ -940,7 +940,8 @@ def createMarkdownNote(listOfBookIdsToUpdateMarkdownNotes):
                 titleBlock.append("---" + "\n")
             except NameError:
                 continue
-            fileName = slugify(title)
+            #fileName = slugify(title)
+            fileName = title # Removed slugify to preserve case and spaces
             # fileName = get_valid_filename_django(title)
             yamlData = "".join(yamlData)
             commentData = "".join(commentData)
