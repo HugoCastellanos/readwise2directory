@@ -951,6 +951,18 @@ def createMarkdownNote(listOfBookIdsToUpdateMarkdownNotes):
                 booksWithNoHighlights += 1
                 pass
             else:
+                # Change directory according to source
+                if str(source) == 'tweets':
+                    sourceOutputDir = 'Tweet'
+                if str(source) == 'articles':
+                    sourceOutputDir = 'Article'
+                if str(source) == 'books':
+                    sourceOutputDir = 'Book'
+                if str(source) == 'podcasts':
+                    sourceOutputDir = 'Podcast'
+                if str(source) == 'supplementals':
+                    sourceOutputDir = 'Supplemental'
+                os.chdir(targetDirectory + '/' + sourceOutputDir)
                 with open(fileName + ".md", 'w') as newFile: # Warning: this will overwrite all content within the readwise note.
                     print(yamlData, file=newFile)
                     print(commentData, file=newFile)
