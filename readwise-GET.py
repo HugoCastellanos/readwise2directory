@@ -273,8 +273,6 @@ def appendTagsToHighlightObject(list_highlights):
                         originalHref = tag.get_attribute("href") # e.g. https://readwise.io/tags/<tag_name>
                         trimHref = originalHref.replace('https://readwise.io/tags/', '') # e.g. <tag_name>
                         newTags.append(trimHref)
-                    # Add personal flag for verzettelen
-                    newTags.append('TVZ')
                     newTags = sorted(newTags)
                     newTagsCounter = len(newTags)
                     if originalTags == newTags:
@@ -893,6 +891,7 @@ def createMarkdownNote(listOfBookIdsToUpdateMarkdownNotes):
             indexBook = list(map(itemgetter('book_id'), categoriesObject[indexCategory])).index(str(key)) # Identify which position the 'book_id' corresponds to within the category object
             yamlData = []
             titleBlock = []
+            commentData = []
             yamlData.append("---" + "\n")
             # Add title to yamlData and titleBlock
             title = unidecode(categoriesObject[indexCategory][indexBook]['title']).replace('"', '\'')
@@ -928,6 +927,12 @@ def createMarkdownNote(listOfBookIdsToUpdateMarkdownNotes):
                 continue
             yamlData.append("---" + "\n\n")
             titleBlock.append("---" + "\n\n")
+
+            # Add comment with tags
+            commentData.append("%%\n")
+            commentData.append("Tags: #readwise2directory #TVZ\n")
+            commentData.append("Last Updated: [[" + str(lastUpdated) + "]]\n")
+            commentData.append("%%" + "\n")
             # Add cover image URL if exists
             try:
                 cover_image_url = str(categoriesObject[indexCategory][indexBook]['cover_image_url'])
@@ -938,6 +943,7 @@ def createMarkdownNote(listOfBookIdsToUpdateMarkdownNotes):
             fileName = slugify(title)
             # fileName = get_valid_filename_django(title)
             yamlData = "".join(yamlData)
+            commentData = "".join(commentData)
             titleBlock = "".join(titleBlock)
             # Ignore books with no highlights
             if str(num_highlights) == '0':
@@ -946,6 +952,7 @@ def createMarkdownNote(listOfBookIdsToUpdateMarkdownNotes):
             else:
                 with open(fileName + ".md", 'w') as newFile: # Warning: this will overwrite all content within the readwise note.
                     print(yamlData, file=newFile)
+                    print(commentData, file=newFile)
                     print(titleBlock, file=newFile)
                     # Append highlights to the file beneath the 'book_id' metadata
                     for n in range(len(categoriesObject[indexCategory][indexBook]['highlights'])):
