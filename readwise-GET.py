@@ -4,8 +4,8 @@
 
 import requests, os, io, sys, shutil, django, json, time
 from datetime import datetime
-from itertools import groupby 
-from operator import itemgetter 
+from itertools import groupby
+from operator import itemgetter
 from unidecode import unidecode
 from pathvalidate import ValidationError, validate_filepath
 from pathlib import Path
@@ -62,7 +62,7 @@ def insertPath(directory):
 def convertDateFromToUtcFormat(dateFrom):
     if dateFrom == "" or dateFrom is None:
         lastScriptRunDateMatchingString = ' Script complete'
-        try: 
+        try:
             for line in reversed(list(open('readwiseGET.log', 'r').readlines())):
                 if lastScriptRunDateMatchingString in line:
                     dateLastScriptRun = str(line.replace(lastScriptRunDateMatchingString, '')).rstrip("\n")
@@ -103,7 +103,7 @@ def replaceNoneInListOfDict(listOfDicts):
 # Load JSON file into list of categories objects
 def loadBookDataFromJsonToObject():
     for i in range(len(categoriesObjectNames)):
-        try: 
+        try:
             with open(sourceDirectory + "/readwiseCategories/" + categoriesObjectNames[i] + ".json", 'r') as infile:
                 try:
                     categoriesObject[i] = json.load(infile) # list of categories objects with up-to-date data loaded from JSON files
@@ -122,12 +122,12 @@ def appendBookDataToObject():
     for key, value in booksListResultsGroup: # key = 'category'
         old_newBooksCounter = newBooksCounter
         old_updatedBooksCounter = updatedBooksCounter
-        for data in value: 
+        for data in value:
             book_id = str(data['id'])
             title = unidecode(data['title'])
             if(str(data['author']) == "None"):
                 author = " "
-            else: 
+            else:
                 author = unidecode(data['author'])
             source = data['category']
             num_highlights = data['num_highlights']
@@ -145,7 +145,7 @@ def appendBookDataToObject():
             else:
                 indexBook = list(map(itemgetter('book_id'), categoriesObject[indexCategory])).index(book_id)
                 categoriesObject[indexCategory][indexBook]['book_id'] = book_id
-                categoriesObject[indexCategory][indexBook]['title'] = title  
+                categoriesObject[indexCategory][indexBook]['title'] = title
                 categoriesObject[indexCategory][indexBook]['author'] = author
                 categoriesObject[indexCategory][indexBook]['source'] = source
                 categoriesObject[indexCategory][indexBook]['num_highlights'] = num_highlights
@@ -166,12 +166,12 @@ def appendHighlightDataToObject():
     updatedHighlightsCounter = 0
     for key, value in highlightsListResultsGroup: # key = 'book_id'
         listCategories = [item for category in categoriesObject for item in category]
-        if any(d.get('book_id') == str(key) for d in listCategories): # Check if the 'book_id' from the grouped highlights exists. 
+        if any(d.get('book_id') == str(key) for d in listCategories): # Check if the 'book_id' from the grouped highlights exists.
             index = list(map(itemgetter('book_id'), listCategories)).index(str(key))
             source = listCategories[index]['source'] # Get the 'category' of the corresponding 'book_id' from the grouped highlights
             indexCategory = categoriesObjectNames.index(source) # Identify which position the 'category' corresponds to within the list of category objects
             indexBook = list(map(itemgetter('book_id'), categoriesObject[indexCategory])).index(str(key)) # Identify which position the 'book_id' corresponds to within the category object
-            for data in value: 
+            for data in value:
                 id = str(data['id'])
                 note = unidecode(data['note'])
                 location = str(data['location'])
@@ -249,11 +249,11 @@ def appendTagsToHighlightObject(list_highlights):
                 book_id = categoriesObject[indexCategory][indexBook]['book_id']
                 bookReviewUrl = 'https://readwise.io/bookreview/' + book_id
                 # Open new tab in Chrome window
-                driver.find_element_by_tag_name('body').send_keys(Keys.COMMAND + 't') 
-                # driver.find_element_by_tag_name('body').send_keys(Keys.CONTROL + 't') 
+                driver.find_element_by_tag_name('body').send_keys(Keys.COMMAND + 't')
+                # driver.find_element_by_tag_name('body').send_keys(Keys.CONTROL + 't')
                 driver.get(bookReviewUrl)
                 # Loop through tags and append to highlight object within corresponding book object
-                try: 
+                try:
                     xPathHighlightId = "//*[@id=\'highlight" + id + "\']"
                     highlightIdBlock = WebDriverWait(driver, 10).until(
                         EC.presence_of_element_located((By.XPATH, xPathHighlightId))
@@ -268,9 +268,13 @@ def appendTagsToHighlightObject(list_highlights):
                         pass
                     newTags = []
                     for tag in tagLinks:
+                        if tag == 'readwise':
+                            pass
                         originalHref = tag.get_attribute("href") # e.g. https://readwise.io/tags/<tag_name>
                         trimHref = originalHref.replace('https://readwise.io/tags/', '') # e.g. <tag_name>
                         newTags.append(trimHref)
+                    # Add personal flag for verzettelen
+                    newTags.append('TVZ')
                     newTags = sorted(newTags)
                     newTagsCounter = len(newTags)
                     if originalTags == newTags:
@@ -282,7 +286,7 @@ def appendTagsToHighlightObject(list_highlights):
                         newOrUpdatedTagsProgressCounter += 1
                         listOfBookIdsToUpdateMarkdownNotes.append([str(key), str(source)])
                         print(str(newOrUpdatedTagsProgressCounter) + '/' + str(len(list_highlights)) + ' highlights updated with tags')
-                except: 
+                except:
                     message = 'Error looping through tags in highlight id block "' + str(id) + '". Book id: "' + str(book_id) + '". Book URL: "' + str(bookReviewUrl) + '". File: "' \
                     + str(categoriesObjectNames[indexCategory]) + '.json". Book location: "' + str(indexBook) + '". Highlight location: "' + str(indexHighlight) + '".'
                     logDateTimeOutput(message)
@@ -307,13 +311,13 @@ def appendUpdatedHighlightsToObject():
     for i in range(len(listOfBookIdsFromBooksList)):
         if listOfBookIdsFromBooksList[i] not in listOfBookIdsFromHighlightsList:
             listofBookIdsWithMissingHighlights.append(str(listOfBookIdsFromBooksList[i]))
-        else: 
+        else:
             pass
     for i in range(len(listofBookIdsWithMissingHighlights)):
         missingHighlightsListQueryString = {
             "page_size": 1000, # 1000 items per page - maximum
             "page": 1, # Page 1 >> build for loop to cycle through pages and stop when complete
-            "book_id": listofBookIdsWithMissingHighlights[i], 
+            "book_id": listofBookIdsWithMissingHighlights[i],
         }
         # Trigger GET request with missingHighlightsListQueryString
         missingHighlightsList = requests.get(
@@ -466,7 +470,7 @@ def removeHighlightsWithDiscardTag():
             indexBook = list(map(itemgetter('book_id'), categoriesObject[indexCategory])).index(str(book_id)) # Identify which position the 'book_id' corresponds to within the category object
             originalListOfHighlights = listCategories[i][k]['highlights'].copy()
             newListOfHighlights = categoriesObject[indexCategory][indexBook]['highlights'].copy()
-            for n in range(len(originalListOfHighlights)): 
+            for n in range(len(originalListOfHighlights)):
                 try:
                     if any('discard' in s for s in listCategories[i][k]['highlights'][n]['tags']):
                         id = listCategories[i][k]['highlights'][n]['id']
@@ -741,7 +745,7 @@ def fetchTagsFromCsvData(list_Highlight, list_BookTitle, list_BookAuthor, list_A
                     message = str(list_extractedHighlightId[i]) + ' from ' + str(list_extractedHighlightBookId[i]) + ' not matched as it is a duplicate'
                     print(message)
                     pass
-            else: 
+            else:
                 if list_extractedHighlightText[i] in list_Highlight:
                     index2 = list_Highlight.index(list_extractedHighlightText[i])
                     list_HighlightId[index2] = str(list_extractedHighlightId[i])
@@ -798,7 +802,7 @@ def runFetchCsvData():
     downloadCsvExport(readwiseCsvExportFileName)
     readwiseCsvExportPath = os.path.join(sourceDirectory, readwiseCsvExportFileName)
     df = pd.read_csv(readwiseCsvExportPath)
-    # Insert complete path to the excel file and optional variables 
+    # Insert complete path to the excel file and optional variables
     # https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.read_csv.html
     df.sort_values(by=['Highlighted at'], ascending=True)
     # Insert the name of the column as a string in brackets
@@ -868,7 +872,7 @@ def runFetchTagsFromCsvData(list_Highlight, list_BookTitle, list_BookAuthor, lis
 # Append book metadata at the top of the note e.g. title, author, source, readwise url
 # Append all highlights separated by "---" beneath the book metadata
 
-def createMarkdownNote(listOfBookIdsToUpdateMarkdownNotes): 
+def createMarkdownNote(listOfBookIdsToUpdateMarkdownNotes):
     booksWithNoHighlights = 0
     booksWithHeadings = 0
     if os.path.exists(targetDirectory):
@@ -897,14 +901,14 @@ def createMarkdownNote(listOfBookIdsToUpdateMarkdownNotes):
             if(str(categoriesObject[indexCategory][indexBook]['author']) == "None"):
                 author = " "
                 yamlData.append("Author: " + str(author) + "\n")
-            else: 
+            else:
                 author = unidecode(categoriesObject[indexCategory][indexBook]['author']).replace('"', '\'')
                 yamlData.append("Author: " + "\"" + str(author) + "\"" + "\n")
             source = categoriesObject[indexCategory][indexBook]['source']
             yamlData.append("Tags: " + "[" + "readwise" + ", " + str(source) + "]" + "\n")
             num_highlights = categoriesObject[indexCategory][indexBook]['num_highlights']
             yamlData.append("Highlights: " + str(num_highlights) + "\n")
-            lastUpdated = datetime.strptime(categoriesObject[indexCategory][indexBook]['updated'][0:10], '%Y-%m-%d').strftime("%y%m%d %A")
+            lastUpdated = datetime.strptime(categoriesObject[indexCategory][indexBook]['updated'][0:10], '%Y-%m-%d').strftime("%Y-%m-%d")
             yamlData.append("Updated: " + "[[" + str(lastUpdated) + "]]" + "\n")
             # Add readwise url to yamlData and titleBlock
             url = str(categoriesObject[indexCategory][indexBook]['url'])
@@ -913,7 +917,7 @@ def createMarkdownNote(listOfBookIdsToUpdateMarkdownNotes):
             book_id = str(categoriesObject[indexCategory][indexBook]['book_id'])
             yamlData.append("Readwise ID: " + str(book_id) + "\n")
             # Add source URL (if exists) to yamlData and titleBlock
-            try: 
+            try:
                 source_url = str(categoriesObject[indexCategory][indexBook]['source_url'])
                 if source_url.lower() == "none" or source_url.lower() == "null" or source_url == "":
                     continue
@@ -930,7 +934,7 @@ def createMarkdownNote(listOfBookIdsToUpdateMarkdownNotes):
                 titleBlock.append("![](" + cover_image_url + ")" + "\n\n")
                 titleBlock.append("---" + "\n")
             except NameError:
-                continue 
+                continue
             fileName = slugify(title)
             # fileName = get_valid_filename_django(title)
             yamlData = "".join(yamlData)
@@ -940,11 +944,11 @@ def createMarkdownNote(listOfBookIdsToUpdateMarkdownNotes):
                 booksWithNoHighlights += 1
                 pass
             else:
-                with open(fileName + ".md", 'w') as newFile: # Warning: this will overwrite all content within the readwise note. 
+                with open(fileName + ".md", 'w') as newFile: # Warning: this will overwrite all content within the readwise note.
                     print(yamlData, file=newFile)
                     print(titleBlock, file=newFile)
                     # Append highlights to the file beneath the 'book_id' metadata
-                    for n in range(len(categoriesObject[indexCategory][indexBook]['highlights'])): 
+                    for n in range(len(categoriesObject[indexCategory][indexBook]['highlights'])):
                         highlightData = []
                         id = str(categoriesObject[indexCategory][indexBook]['highlights'][n]['id'])
                         note = unidecode(categoriesObject[indexCategory][indexBook]['highlights'][n]['note'])
@@ -983,11 +987,11 @@ def createMarkdownNote(listOfBookIdsToUpdateMarkdownNotes):
                                     if textSplit[s] == '':
                                         x = ("> \\" + textSplit[s])
                                     else:
-                                        x = ("> " + textSplit[s])    
+                                        x = ("> " + textSplit[s])
                                     textNew.append(x)
                                 textNew = "\n".join(textNew)
                                 highlightData.append(textNew + "\n\n" + "^" + id + "\n\n")
-                            else: 
+                            else:
                                 highlightData.append(text + " ^" + id + "\n\n")
                         if note == [] or note == "":
                             pass
@@ -997,7 +1001,7 @@ def createMarkdownNote(listOfBookIdsToUpdateMarkdownNotes):
                             pass
                         else:
                             tags = " ".join(str(v) for v in tagsArray)
-                            highlightData.append("**Tags:** " + str(tags) + "\n")                    
+                            highlightData.append("**Tags:** " + str(tags) + "\n")
                         if str(categoriesObject[indexCategory][indexBook]['highlights'][n]['url']) == "None":
                             pass
                         else:
@@ -1071,7 +1075,7 @@ dateFrom = convertDateFromToUtcFormat(dateFrom)
 print('Checking if a valid targetDirectory variable is defined in readwiseMetadata...')
 insertPath(targetDirectory)
 
-abspath = os.path.realpath(__file__) # Create absolute path for this file 
+abspath = os.path.realpath(__file__) # Create absolute path for this file
 
 # Create sourceDirectory variable from absolute path for this file
 print('Creating sourceDirectory variable from absolute path for this file...')
@@ -1146,7 +1150,7 @@ except NameError:
     print(message)
 
 # Loop through pagination using 'next' property from GET response
-try: 
+try:
     additionalLoopCounter = 0
     while booksListJson['next']:
         additionalLoopCounter += 1
@@ -1200,7 +1204,7 @@ appendBookDataToObject()
 highlightsListQueryString = {
     "page_size": 1000, # 1000 items per page - maximum
     "page": 1, # Page 1 >> build for loop to cycle through pages and stop when complete
-    "highlighted_at__gt": dateFrom, 
+    "highlighted_at__gt": dateFrom,
 }
 
 # Trigger GET request with highlightsListQueryString
