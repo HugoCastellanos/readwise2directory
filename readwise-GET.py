@@ -904,7 +904,7 @@ def createMarkdownNote(listOfBookIdsToUpdateMarkdownNotes):
                 author = unidecode(categoriesObject[indexCategory][indexBook]['author']).replace('"', '\'')
                 yamlData.append("Author: " + "\"" + str(author) + "\"" + "\n")
             source = categoriesObject[indexCategory][indexBook]['source']
-            yamlData.append("Tags: " + "[" + "readwise" + ", " + str(source) + "]" + "\n")
+            yamlData.append("Tags: " + "[" + "readwise2directory" + ", TVZ, " + str(source) + "]" + "\n")
             num_highlights = categoriesObject[indexCategory][indexBook]['num_highlights']
             yamlData.append("Highlights: " + str(num_highlights) + "\n")
             lastUpdated = datetime.strptime(categoriesObject[indexCategory][indexBook]['updated'][0:10], '%Y-%m-%d').strftime("%Y-%m-%d")
@@ -926,11 +926,10 @@ def createMarkdownNote(listOfBookIdsToUpdateMarkdownNotes):
             except NameError:
                 continue
             yamlData.append("---" + "\n\n")
-            titleBlock.append("---" + "\n\n")
+            titleBlock.append("---" + "\n")
 
             # Add comment with tags
             commentData.append("%%\n")
-            commentData.append("Tags: #readwise2directory #TVZ\n")
             commentData.append("Last Updated: [[" + str(lastUpdated) + "]]\n")
             commentData.append("%%" + "\n")
             # Add cover image URL if exists
