@@ -3,7 +3,8 @@
 ##############################
 
 import requests, os, io, sys, shutil, django, json, time
-from datetime import datetime
+#from datetime import datetime
+import datetime
 from itertools import groupby
 from operator import itemgetter
 from unidecode import unidecode
@@ -30,12 +31,12 @@ old_stdout = sys.stdout
 
 old_cwd = os.getcwd()
 
-startTime = datetime.now()
+startTime = datetime.datetime.now()
 
 def logDateTimeOutput(message):
     log_file = open('readwiseGET.log', 'a')
     sys.stdout = log_file
-    now = datetime.now()
+    now = datetime.datetime.now()
     print(now.strftime("%Y-%m-%dT%H:%M:%SZ") + " " + str(message))
     sys.stdout = old_stdout
     log_file.close()
@@ -75,7 +76,7 @@ def convertDateFromToUtcFormat(dateFrom):
             logDateTimeOutput('Failed to read readwiseGET.log file')
     elif dateFrom != "" or dateFrom is not None:
         try:
-            dateFrom = datetime.strptime(dateFrom, '%Y-%m-%d')
+            dateFrom = datetime.datetime.strptime(dateFrom, '%Y-%m-%d')
             dateFrom = dateFrom.strftime("%Y-%m-%dT%H:%M:%SZ")
             message = 'Date from = "' + str(dateFrom) + '" from readwiseMetadata used in query string'
             logDateTimeOutput(message)
@@ -182,6 +183,13 @@ def appendHighlightDataToObject():
                 updated = str(data['updated'])
                 text = unidecode(data['text'])
                 tags = []
+                # If the source is a book, add 10 hours to the highlighted at date to account for timezone difference between me and AKST (Amazon's highlighted at timezone)
+                if (str(source) == 'books'):
+                    highlighted_at = str(data['highlighted_at']) # 2021-02-06T04:56:00Z
+                    highlighted_at = datetime.datetime.strptime(highlighted_at, "%Y-%m-%dT%H:%M:%SZ")
+                    highlighted_at = highlighted_at + datetime.timedelta(hours=10)
+                    highlighted_at = highlighted_at.strftime("%Y-%m-%dT%H:%M:%SZ")
+                    print(' appendHighlightDataToObject highlighted_at =', highlighted_at)
                 # highlight = { "id" : id, "text" : text, "note" : note, "tags" : tags, "location" : location, "location_type" : location_type, "url" : url, "highlighted_at" : highlighted_at, "updated" : updated }
                 if not any(d["id"] == id for d in categoriesObject[indexCategory][indexBook]['highlights']):
                     highlight = { "id" : id, "text" : text, "note" : note, "tags" : tags, "location" : location, "location_type" : location_type, "url" : url, "highlighted_at" : highlighted_at, "updated" : updated }
@@ -394,6 +402,13 @@ def appendUpdatedHighlightsToObject():
                     location = str(missingHighlightsListResultsSort[j]['location'])
                     location_type = missingHighlightsListResultsSort[j]['location_type']
                     url = str(missingHighlightsListResultsSort[j]['url'])
+                    # If the source is a book, add 10 hours to the highlighted at date to account for timezone difference between me and AKST (Amazon's highlighted at timezone)
+                    if (str(source) == 'books'):
+                        highlighted_at = str(data['highlighted_at']) # 2021-02-06T04:56:00Z
+                        highlighted_at = datetime.datetime.strptime(highlighted_at, "%Y-%m-%dT%H:%M:%SZ")
+                        highlighted_at = highlighted_at + datetime.timedelta(hours=10)
+                        highlighted_at = highlighted_at.strftime("%Y-%m-%dT%H:%M:%SZ")
+                        print('appendUpdatedHighlightsToObject highlighted_at =', highlighted_at)
                     highlighted_at = str(missingHighlightsListResultsSort[j]['highlighted_at'])
                     updated = str(missingHighlightsListResultsSort[j]['updated'])
                     text = unidecode(missingHighlightsListResultsSort[j]['text'])
@@ -871,6 +886,8 @@ def runFetchTagsFromCsvData(list_Highlight, list_BookTitle, list_BookAuthor, lis
 # Append all highlights separated by "---" beneath the book metadata
 
 def createMarkdownNote(listOfBookIdsToUpdateMarkdownNotes):
+    # for x in listOfBookIdsToUpdateMarkdownNotes:
+    #     print("listOfBookIdsToUpdateMarkdownNotes " + str(x))
     booksWithNoHighlights = 0
     booksWithHeadings = 0
     if os.path.exists(targetDirectory):
@@ -907,7 +924,7 @@ def createMarkdownNote(listOfBookIdsToUpdateMarkdownNotes):
             yamlData.append("Tags: " + "[" + "readwise2directory" + ", TVZ, " + str(source) + "]" + "\n")
             num_highlights = categoriesObject[indexCategory][indexBook]['num_highlights']
             yamlData.append("Highlights: " + str(num_highlights) + "\n")
-            lastUpdated = datetime.strptime(categoriesObject[indexCategory][indexBook]['updated'][0:10], '%Y-%m-%d').strftime("%Y-%m-%d")
+            lastUpdated = datetime.datetime.strptime(categoriesObject[indexCategory][indexBook]['updated'][0:10], '%Y-%m-%d').strftime("%Y-%m-%d")
             yamlData.append("Updated: " + "[[" + str(lastUpdated) + "]]" + "\n")
             # Add readwise url to yamlData and titleBlock
             url = str(categoriesObject[indexCategory][indexBook]['url'])
@@ -919,7 +936,8 @@ def createMarkdownNote(listOfBookIdsToUpdateMarkdownNotes):
             try:
                 source_url = str(categoriesObject[indexCategory][indexBook]['source_url'])
                 if source_url.lower() == "none" or source_url.lower() == "null" or source_url == "":
-                    continue
+                    print('no source URL found')
+                    #continue # Commented this out because otherwise, books don't get markdown notes generated from them.
                 else:
                     yamlData.append("Source URL: " + str(source_url) + "\n")
                     titleBlock.append(" | " + "[Source URL](" + str(source_url) + ")"+ "\n\n")
@@ -1038,8 +1056,8 @@ def createMarkdownNote(listOfBookIdsToUpdateMarkdownNotes):
                             iFrameWithPodcastUrl = '<iframe src="' + podcastUrl + '" frameborder="0" style="width:100%; height:100%;"></iframe>'
                             highlightData.append(iFrameWithPodcastUrl + "\n")
                         """
-                        highlighted_at = datetime.strptime(categoriesObject[indexCategory][indexBook]['highlights'][n]['highlighted_at'][0:10], '%Y-%m-%d').strftime("%y%m%d %A") # Trim the UTC date field and re-format
-                        updated = datetime.strptime(categoriesObject[indexCategory][indexBook]['highlights'][n]['updated'][0:10], '%Y-%m-%d').strftime("%y%m%d %A") # Trim the UTC date field and re-format
+                        highlighted_at = datetime.datetime.strptime(categoriesObject[indexCategory][indexBook]['highlights'][n]['highlighted_at'][0:10], '%Y-%m-%d').strftime("%y%m%d %A") # Trim the UTC date field and re-format
+                        updated = datetime.datetime.strptime(categoriesObject[indexCategory][indexBook]['highlights'][n]['updated'][0:10], '%Y-%m-%d').strftime("%y%m%d %A") # Trim the UTC date field and re-format
                         if highlighted_at == updated:
                             date = updated
                             highlightData.append("**Date:** " + "[[" + str(date) + "]]" + "\n")
