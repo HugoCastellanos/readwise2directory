@@ -120,6 +120,7 @@ def appendBookDataToObject():
     newBooksCounter = 0
     updatedBooksCounter = 0
     totalNumberOfBooks = len(booksListResultsSort)
+    print('totalNumber of Books = ' + str(totalNumberOfBooks))
     for key, value in booksListResultsGroup: # key = 'category'
         old_newBooksCounter = newBooksCounter
         old_updatedBooksCounter = updatedBooksCounter
@@ -139,10 +140,12 @@ def appendBookDataToObject():
             highlights = []
             values = { "book_id" : book_id, "title" : title, "author" : author, "source" : source, "url" : url, "cover_image_url" : cover_image_url, "source_url" : source_url, "num_highlights" : num_highlights, "updated" : updated, "highlights" : highlights }
             indexCategory = categoriesObjectNames.index(source) # Identify which position the 'category' corresponds to within the list of category objects
+            print('title = ' + title)
             if not any(d["book_id"] == book_id for d in categoriesObject[indexCategory]):
                 categoriesObject[indexCategory].append(values)
                 newBooksCounter += 1
                 print(str((newBooksCounter + updatedBooksCounter)) + '/' + str(len(booksListResultsSort)) + ' books added or updated')
+                print('New title = ' + title)
             else:
                 indexBook = list(map(itemgetter('book_id'), categoriesObject[indexCategory])).index(book_id)
                 categoriesObject[indexCategory][indexBook]['book_id'] = book_id
@@ -184,12 +187,12 @@ def appendHighlightDataToObject():
                 text = unidecode(data['text'])
                 tags = []
                 # If the source is a book, add 10 hours to the highlighted at date to account for timezone difference between me and AKST (Amazon's highlighted at timezone)
-                if (str(source) == 'books'):
-                    highlighted_at = str(data['highlighted_at']) # 2021-02-06T04:56:00Z
-                    highlighted_at = datetime.datetime.strptime(highlighted_at, "%Y-%m-%dT%H:%M:%SZ")
-                    highlighted_at = highlighted_at + datetime.timedelta(hours=10)
-                    highlighted_at = highlighted_at.strftime("%Y-%m-%dT%H:%M:%SZ")
-                    print(' appendHighlightDataToObject highlighted_at =', highlighted_at)
+                # if (str(source) == 'books'):
+                #     highlighted_at = str(data['highlighted_at']) # 2021-02-06T04:56:00Z
+                #     highlighted_at = datetime.datetime.strptime(highlighted_at, "%Y-%m-%dT%H:%M:%SZ")
+                #     highlighted_at = highlighted_at + datetime.timedelta(hours=10)
+                #     highlighted_at = highlighted_at.strftime("%Y-%m-%dT%H:%M:%SZ")
+                #     print(' appendHighlightDataToObject highlighted_at =', highlighted_at)
                 # highlight = { "id" : id, "text" : text, "note" : note, "tags" : tags, "location" : location, "location_type" : location_type, "url" : url, "highlighted_at" : highlighted_at, "updated" : updated }
                 if not any(d["id"] == id for d in categoriesObject[indexCategory][indexBook]['highlights']):
                     highlight = { "id" : id, "text" : text, "note" : note, "tags" : tags, "location" : location, "location_type" : location_type, "url" : url, "highlighted_at" : highlighted_at, "updated" : updated }
@@ -1167,6 +1170,7 @@ booksList = requests.get(
     headers={"Authorization": "Token " + token}, # token imported from readwiseAccessToken file
     params=booksListQueryString # query string object
 )
+print("Here's the response: " + str(booksList.content))
 
 # Convert response into JSON object
 try:
@@ -1314,7 +1318,7 @@ highlightsListResultsSort = sorted(highlightsListResults, key = itemgetter('book
 print('Grouping readwise highlight data by category...')
 highlightsListResultsGroup = groupby(highlightsListResultsSort, key = itemgetter('book_id'))
 
-listOfBookIdsToUpdateMarkdownNotes = [] # Append 'book ids' to loop through when creating new or updating existing markdown notes
+listOfBookIdsToUpdateMarkdownNotes = [] # Append 'book ids' to loop through when creating new or updating existing arkdown notes
 
 # Append new highlights to categoriesObject, or update existing highlight data
 print('Appending readwise highlight data returned to categoriesObject...')

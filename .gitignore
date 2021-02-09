@@ -54,3 +54,6 @@ readwiseMetadata.py
 
 # readWise Categories
 readwiseCategories/
+
+# Extra log
+readwiseGET_scheduled.log
